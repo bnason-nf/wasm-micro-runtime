@@ -306,7 +306,7 @@ fd_prestats_remove_entry(struct fd_prestats *pt, __wasi_fd_t fd)
     struct fd_prestat *prestat = &pt->prestats[fd];
 
     if (prestat->dir != NULL) {
-        wasm_runtime_free((void *)prestat->dir);
+        wasm_runtime_free((void *)(uintptr_t)prestat->dir);
         prestat->dir = NULL;
     }
 
@@ -3032,7 +3032,7 @@ fd_prestats_destroy(struct fd_prestats *pt)
     if (pt->prestats) {
         for (uint32 i = 0; i < pt->size; i++) {
             if (pt->prestats[i].dir != NULL) {
-                wasm_runtime_free((void *)pt->prestats[i].dir);
+                wasm_runtime_free((void *)(uintptr_t)pt->prestats[i].dir);
             }
         }
         rwlock_destroy(&pt->lock);

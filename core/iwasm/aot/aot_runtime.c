@@ -1581,7 +1581,7 @@ execute_post_instantiate_functions(AOTModuleInstance *module_inst,
 #if WASM_ENABLE_THREAD_MGR != 0
         if (!exec_env)
             exec_env = wasm_clusters_search_exec_env(
-                (WASMModuleInstanceCommon *)module_inst);
+                (const WASMModuleInstanceCommon *)module_inst);
 #endif
         if (!exec_env) {
             if (!(exec_env = exec_env_created = wasm_exec_env_create(
@@ -2722,7 +2722,7 @@ execute_free_function(AOTModuleInstance *module_inst, WASMExecEnv *exec_env,
 #if WASM_ENABLE_THREAD_MGR != 0
         if (!exec_env)
             exec_env = wasm_clusters_search_exec_env(
-                (WASMModuleInstanceCommon *)module_inst);
+                (const WASMModuleInstanceCommon *)module_inst);
 #endif
         if (!exec_env) {
             if (!(exec_env = exec_env_created = wasm_exec_env_create(

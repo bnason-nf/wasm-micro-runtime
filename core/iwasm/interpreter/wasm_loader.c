@@ -37,6 +37,11 @@
 #define TEMPLATE_READ_VALUE(Type, p) \
     (p += sizeof(Type), *(Type *)(p - sizeof(Type)))
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#endif
+
 #if WASM_ENABLE_MEMORY64 != 0
 static bool
 has_module_memory64(WASMModule *module)
@@ -2552,8 +2557,8 @@ load_function_import(const uint8 **p_buf, const uint8 *buf_end,
     }
 #endif
 
-    function->module_name = (char *)sub_module_name;
-    function->field_name = (char *)function_name;
+    function->module_name = sub_module_name;
+    function->field_name = function_name;
     function->func_type = declare_func_type;
     /* func_ptr_linked is for native registered symbol */
     function->func_ptr_linked = is_native_symbol ? linked_func : NULL;
@@ -15840,3 +15845,7 @@ fail:
     (void)align;
     return return_value;
 }
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif

@@ -403,11 +403,11 @@ fail:
 
 bool
 wasm_runtime_validate_native_addr(WASMModuleInstanceCommon *module_inst_comm,
-                                  void *native_ptr, uint64 size)
+                                  const void *native_ptr, uint64 size)
 {
     WASMModuleInstance *module_inst = (WASMModuleInstance *)module_inst_comm;
     WASMMemoryInstance *memory_inst;
-    uint8 *addr = (uint8 *)native_ptr;
+    const uint8 *addr = (const uint8 *)native_ptr;
     uint64 max_linear_memory_size = MAX_LINEAR_MEMORY_SIZE;
 
     bh_assert(module_inst_comm->module_type == Wasm_Module_Bytecode
@@ -486,11 +486,11 @@ wasm_runtime_addr_app_to_native(WASMModuleInstanceCommon *module_inst_comm,
 
 uint64
 wasm_runtime_addr_native_to_app(WASMModuleInstanceCommon *module_inst_comm,
-                                void *native_ptr)
+                                const void *native_ptr)
 {
     WASMModuleInstance *module_inst = (WASMModuleInstance *)module_inst_comm;
     WASMMemoryInstance *memory_inst;
-    uint8 *addr = (uint8 *)native_ptr;
+    const uint8 *addr = (const uint8 *)native_ptr;
     bool bounds_checks;
     uint64 ret;
 

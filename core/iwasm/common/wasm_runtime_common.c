@@ -962,21 +962,21 @@ align_ptr(const uint8 *p, uint32 b)
     } while (0)
 
 /* NOLINTNEXTLINE */
-#define read_uint16(p, p_end, res)                 \
-    do {                                           \
-        p = (uint8 *)align_ptr(p, sizeof(uint16)); \
-        CHECK_BUF(p, p_end, sizeof(uint16));       \
-        res = *(uint16 *)p;                        \
-        p += sizeof(uint16);                       \
+#define read_uint16(p, p_end, res)                       \
+    do {                                                 \
+        p = (const uint8 *)align_ptr(p, sizeof(uint16)); \
+        CHECK_BUF(p, p_end, sizeof(uint16));             \
+        res = *(const uint16 *)p;                        \
+        p += sizeof(uint16);                             \
     } while (0)
 
 /* NOLINTNEXTLINE */
-#define read_uint32(p, p_end, res)                 \
-    do {                                           \
-        p = (uint8 *)align_ptr(p, sizeof(uint32)); \
-        CHECK_BUF(p, p_end, sizeof(uint32));       \
-        res = *(uint32 *)p;                        \
-        p += sizeof(uint32);                       \
+#define read_uint32(p, p_end, res)                       \
+    do {                                                 \
+        p = (const uint8 *)align_ptr(p, sizeof(uint32)); \
+        CHECK_BUF(p, p_end, sizeof(uint32));             \
+        res = *(const uint32 *)p;                        \
+        p += sizeof(uint32);                             \
     } while (0)
 
 bool
@@ -2077,7 +2077,7 @@ wasm_runtime_get_export_table_inst(WASMModuleInstanceCommon *const module_inst,
             const WASMExport *wasm_export = &wasm_module->exports[i];
             if ((wasm_export->kind == WASM_IMPORT_EXPORT_KIND_TABLE)
                 && !strcmp(wasm_export->name, name)) {
-                const WASMTableInstance *wasm_table_inst =
+                WASMTableInstance *wasm_table_inst =
                     wasm_module_inst->tables[wasm_export->index];
                 table_inst->elem_kind =
                     val_type_to_val_kind(wasm_table_inst->elem_type);
@@ -2099,7 +2099,7 @@ wasm_runtime_get_export_table_inst(WASMModuleInstanceCommon *const module_inst,
             const AOTExport *aot_export = &aot_module->exports[i];
             if ((aot_export->kind == WASM_IMPORT_EXPORT_KIND_TABLE)
                 && !strcmp(aot_export->name, name)) {
-                const AOTTableInstance *aot_table_inst =
+                AOTTableInstance *aot_table_inst =
                     aot_module_inst->tables[aot_export->index];
                 table_inst->elem_kind =
                     val_type_to_val_kind(aot_table_inst->elem_type);
@@ -2211,14 +2211,16 @@ wasm_runtime_get_function_type(const WASMFunctionInstanceCommon *function,
 
 #if WASM_ENABLE_INTERP != 0
     if (module_type == Wasm_Module_Bytecode) {
-        WASMFunctionInstance *wasm_func = (WASMFunctionInstance *)function;
+        const WASMFunctionInstance *wasm_func =
+            (const WASMFunctionInstance *)function;
         type = wasm_func->is_import_func ? wasm_func->u.func_import->func_type
                                          : wasm_func->u.func->func_type;
     }
 #endif
 #if WASM_ENABLE_AOT != 0
     if (module_type == Wasm_Module_AoT) {
-        AOTFunctionInstance *aot_func = (AOTFunctionInstance *)function;
+        const AOTFunctionInstance *aot_func =
+            (const AOTFunctionInstance *)function;
         type = aot_func->is_import_func ? aot_func->u.func_import->func_type
                                         : aot_func->u.func.func_type;
     }
@@ -2909,15 +2911,18 @@ wasm_runtime_create_exec_env_singleton(
 }
 
 WASMExecEnv *
-wasm_runtime_get_exec_env_singleton(WASMModuleInstanceCommon *module_inst_comm)
+wasm_runtime_get_exec_env_singleton(
+    const WASMModuleInstanceCommon *module_inst_comm)
 {
-    WASMModuleInstance *module_inst = (WASMModuleInstance *)module_inst_comm;
+    const WASMModuleInstance *module_inst =
+        (const WASMModuleInstance *)module_inst_comm;
 
     bh_assert(module_inst_comm->module_type == Wasm_Module_Bytecode
               || module_inst_comm->module_type == Wasm_Module_AoT);
 
     if (!module_inst->exec_env_singleton) {
-        wasm_runtime_create_exec_env_singleton(module_inst_comm);
+        wasm_runtime_create_exec_env_singleton(
+            (WASMModuleInstanceCommon *)(uintptr_t)module_inst_comm);
     }
     return module_inst->exec_env_singleton;
 }
@@ -2940,8 +2945,8 @@ void
 wasm_set_exception(WASMModuleInstance *module_inst, const char *exception)
 {
 #if WASM_ENABLE_THREAD_MGR != 0
-    WASMExecEnv *exec_env =
-        wasm_clusters_search_exec_env((WASMModuleInstanceCommon *)module_inst);
+    WASMExecEnv *exec_env = wasm_clusters_search_exec_env(
+        (const WASMModuleInstanceCommon *)module_inst);
     if (exec_env) {
         wasm_cluster_set_exception(exec_env, exception);
     }
@@ -3004,7 +3009,7 @@ wasm_set_exception_with_id(WASMModuleInstance *module_inst, uint32 id)
 }
 
 const char *
-wasm_get_exception(WASMModuleInstance *module_inst)
+wasm_get_exception(const WASMModuleInstance *module_inst)
 {
     if (module_inst->cur_exception[0] == '\0')
         return NULL;
@@ -3046,9 +3051,10 @@ wasm_runtime_set_exception(WASMModuleInstanceCommon *module_inst_comm,
 }
 
 const char *
-wasm_runtime_get_exception(WASMModuleInstanceCommon *module_inst_comm)
+wasm_runtime_get_exception(const WASMModuleInstanceCommon *module_inst_comm)
 {
-    WASMModuleInstance *module_inst = (WASMModuleInstance *)module_inst_comm;
+    const WASMModuleInstance *module_inst =
+        (const WASMModuleInstance *)module_inst_comm;
 
     bh_assert(module_inst_comm->module_type == Wasm_Module_Bytecode
               || module_inst_comm->module_type == Wasm_Module_AoT);
@@ -3312,7 +3318,7 @@ void
 wasm_runtime_set_wasi_args_ex(WASMModuleCommon *module, const char *dir_list[],
                               uint32 dir_count, const char *map_dir_list[],
                               uint32 map_dir_count, const char *env_list[],
-                              uint32 env_count, char *argv[], int argc,
+                              uint32 env_count, const char *argv[], int argc,
                               int64 stdinfd, int64 stdoutfd, int64 stderrfd)
 {
     WASIArguments *wasi_args = get_wasi_args_from_module(module);
@@ -3344,7 +3350,7 @@ void
 wasm_runtime_set_wasi_args(WASMModuleCommon *module, const char *dir_list[],
                            uint32 dir_count, const char *map_dir_list[],
                            uint32 map_dir_count, const char *env_list[],
-                           uint32 env_count, char *argv[], int argc)
+                           uint32 env_count, const char *argv[], int argc)
 {
     wasm_runtime_set_wasi_args_ex(module, dir_list, dir_count, map_dir_list,
                                   map_dir_count, env_list, env_count, argv,
@@ -3378,7 +3384,7 @@ wasm_runtime_set_wasi_ns_lookup_pool(wasm_module_t module,
 
 #if WASM_ENABLE_UVWASI == 0
 static bool
-copy_string_array(const char *array[], uint32 array_size, char **buf_ptr,
+copy_string_array(const char *const *array, uint32 array_size, char **buf_ptr,
                   char ***list_ptr, uint64 *out_buf_size)
 {
     uint64 buf_size = 0, total_size;
@@ -3425,9 +3431,10 @@ wasm_runtime_init_wasi(WASMModuleInstanceCommon *module_inst,
                        const char *env[], uint32 env_count,
                        const char *addr_pool[], uint32 addr_pool_size,
                        const char *ns_lookup_pool[], uint32 ns_lookup_pool_size,
-                       char *argv[], uint32 argc, os_raw_file_handle stdinfd,
-                       os_raw_file_handle stdoutfd, os_raw_file_handle stderrfd,
-                       char *error_buf, uint32 error_buf_size)
+                       const char *argv[], uint32 argc,
+                       os_raw_file_handle stdinfd, os_raw_file_handle stdoutfd,
+                       os_raw_file_handle stderrfd, char *error_buf,
+                       uint32 error_buf_size)
 {
     WASIContext *wasi_ctx;
     char *argv_buf = NULL;
@@ -3458,8 +3465,7 @@ wasm_runtime_init_wasi(WASMModuleInstanceCommon *module_inst,
 
     /* process argv[0], trip the path and suffix, only keep the program name
      */
-    if (!copy_string_array((const char **)argv, argc, &argv_buf, &argv_list,
-                           &argv_buf_size)) {
+    if (!copy_string_array(argv, argc, &argv_buf, &argv_list, &argv_buf_size)) {
         set_error_buf(error_buf, error_buf_size,
                       "Init wasi environment failed: allocate memory failed");
         goto fail;
@@ -3766,9 +3772,10 @@ wasm_runtime_init_wasi(WASMModuleInstanceCommon *module_inst,
                        const char *env[], uint32 env_count,
                        const char *addr_pool[], uint32 addr_pool_size,
                        const char *ns_lookup_pool[], uint32 ns_lookup_pool_size,
-                       char *argv[], uint32 argc, os_raw_file_handle stdinfd,
-                       os_raw_file_handle stdoutfd, os_raw_file_handle stderrfd,
-                       char *error_buf, uint32 error_buf_size)
+                       const char *argv[], uint32 argc,
+                       os_raw_file_handle stdinfd, os_raw_file_handle stdoutfd,
+                       os_raw_file_handle stderrfd, char *error_buf,
+                       uint32 error_buf_size)
 {
     WASIContext *ctx;
     uvwasi_t *uvwasi;
@@ -4088,7 +4095,7 @@ wasm_runtime_get_import_type(WASMModuleCommon *const module, int32 import_index,
 
         uint32 global_index = func_index - aot_module->import_func_count;
         if (global_index < aot_module->import_global_count) {
-            const AOTImportGlobal *aot_import_global =
+            AOTImportGlobal *aot_import_global =
                 &aot_module->import_globals[global_index];
             import_type->module_name = aot_import_global->module_name;
             import_type->name = aot_import_global->global_name;
@@ -4101,7 +4108,7 @@ wasm_runtime_get_import_type(WASMModuleCommon *const module, int32 import_index,
 
         uint32 table_index = global_index - aot_module->import_global_count;
         if (table_index < aot_module->import_table_count) {
-            const AOTImportTable *aot_import_table =
+            AOTImportTable *aot_import_table =
                 &aot_module->import_tables[table_index];
             import_type->module_name = aot_import_table->module_name;
             import_type->name = aot_import_table->table_name;
@@ -4114,7 +4121,7 @@ wasm_runtime_get_import_type(WASMModuleCommon *const module, int32 import_index,
 
         uint32 memory_index = table_index - aot_module->import_table_count;
         if (memory_index < aot_module->import_memory_count) {
-            const AOTImportMemory *aot_import_memory =
+            AOTImportMemory *aot_import_memory =
                 &aot_module->import_memories[memory_index];
             import_type->module_name = aot_import_memory->module_name;
             import_type->name = aot_import_memory->memory_name;
@@ -4138,7 +4145,7 @@ wasm_runtime_get_import_type(WASMModuleCommon *const module, int32 import_index,
             return;
         }
 
-        const WASMImport *wasm_import = &wasm_module->imports[import_index];
+        WASMImport *wasm_import = &wasm_module->imports[import_index];
 
         import_type->module_name = wasm_import->u.names.module_name;
         import_type->name = wasm_import->u.names.field_name;
@@ -6659,7 +6666,7 @@ wasm_runtime_get_table_elem_type(const WASMModuleCommon *module_comm,
 {
 #if WASM_ENABLE_INTERP != 0
     if (module_comm->module_type == Wasm_Module_Bytecode) {
-        WASMModule *module = (WASMModule *)module_comm;
+        const WASMModule *module = (const WASMModule *)module_comm;
 
         if (table_idx < module->import_table_count) {
             WASMTableImport *import_table =
@@ -6687,7 +6694,7 @@ wasm_runtime_get_table_elem_type(const WASMModuleCommon *module_comm,
 
 #if WASM_ENABLE_AOT != 0
     if (module_comm->module_type == Wasm_Module_AoT) {
-        AOTModule *module = (AOTModule *)module_comm;
+        const AOTModule *module = (const AOTModule *)module_comm;
 
         if (table_idx < module->import_table_count) {
             AOTImportTable *import_table = module->import_tables + table_idx;
@@ -6724,7 +6731,8 @@ wasm_runtime_get_table_inst_elem_type(
 #endif
     uint32 *out_min_size, uint32 *out_max_size)
 {
-    WASMModuleInstance *module_inst = (WASMModuleInstance *)module_inst_comm;
+    const WASMModuleInstance *module_inst =
+        (const WASMModuleInstance *)module_inst_comm;
 
     bh_assert(module_inst_comm->module_type == Wasm_Module_Bytecode
               || module_inst_comm->module_type == Wasm_Module_AoT);
@@ -6743,7 +6751,7 @@ wasm_runtime_get_export_func_type(const WASMModuleCommon *module_comm,
 {
 #if WASM_ENABLE_INTERP != 0
     if (module_comm->module_type == Wasm_Module_Bytecode) {
-        WASMModule *module = (WASMModule *)module_comm;
+        const WASMModule *module = (const WASMModule *)module_comm;
 
         if (export->index < module->import_function_count) {
             *out = module->import_functions[export->index].u.function.func_type;
@@ -6759,7 +6767,7 @@ wasm_runtime_get_export_func_type(const WASMModuleCommon *module_comm,
 
 #if WASM_ENABLE_AOT != 0
     if (module_comm->module_type == Wasm_Module_AoT) {
-        AOTModule *module = (AOTModule *)module_comm;
+        const AOTModule *module = (const AOTModule *)module_comm;
 
         if (export->index < module->import_func_count) {
             *out = (WASMFuncType *)
@@ -6784,7 +6792,7 @@ wasm_runtime_get_export_global_type(const WASMModuleCommon *module_comm,
 {
 #if WASM_ENABLE_INTERP != 0
     if (module_comm->module_type == Wasm_Module_Bytecode) {
-        WASMModule *module = (WASMModule *)module_comm;
+        const WASMModule *module = (const WASMModule *)module_comm;
 
         if (export->index < module->import_global_count) {
             WASMGlobalImport *import_global =
@@ -6804,7 +6812,7 @@ wasm_runtime_get_export_global_type(const WASMModuleCommon *module_comm,
 
 #if WASM_ENABLE_AOT != 0
     if (module_comm->module_type == Wasm_Module_AoT) {
-        AOTModule *module = (AOTModule *)module_comm;
+        const AOTModule *module = (const AOTModule *)module_comm;
 
         if (export->index < module->import_global_count) {
             AOTImportGlobal *import_global =
@@ -6831,7 +6839,7 @@ wasm_runtime_get_export_memory_type(const WASMModuleCommon *module_comm,
 {
 #if WASM_ENABLE_INTERP != 0
     if (module_comm->module_type == Wasm_Module_Bytecode) {
-        WASMModule *module = (WASMModule *)module_comm;
+        const WASMModule *module = (const WASMModule *)module_comm;
 
         if (export->index < module->import_memory_count) {
             WASMMemoryImport *import_memory =
@@ -6852,7 +6860,7 @@ wasm_runtime_get_export_memory_type(const WASMModuleCommon *module_comm,
 
 #if WASM_ENABLE_AOT != 0
     if (module_comm->module_type == Wasm_Module_AoT) {
-        AOTModule *module = (AOTModule *)module_comm;
+        const AOTModule *module = (const AOTModule *)module_comm;
 
         if (export->index < module->import_memory_count) {
             AOTImportMemory *import_memory =
@@ -6910,7 +6918,7 @@ argv_to_params(wasm_val_t *out_params, const uint32 *argv,
                 break;
             case VALUE_TYPE_F32:
                 param->kind = WASM_F32;
-                param->of.f32 = *(float32 *)argv++;
+                param->of.f32 = *(const float32 *)argv++;
                 break;
             case VALUE_TYPE_F64:
                 param->kind = WASM_F64;
@@ -6943,7 +6951,8 @@ results_to_argv(WASMModuleInstanceCommon *module_inst, uint32 *out_argv,
                 const wasm_val_t *results, WASMFuncType *func_type)
 {
     const wasm_val_t *result = results;
-    uint32 *argv = out_argv, *u32, i;
+    uint32 *argv = out_argv, i;
+    const uint32 *u32;
     uint8 *result_types = func_type->types + func_type->param_count;
 
     for (i = 0; i < func_type->result_count; i++, result++) {
@@ -6954,7 +6963,7 @@ results_to_argv(WASMModuleInstanceCommon *module_inst, uint32 *out_argv,
                 break;
             case VALUE_TYPE_I64:
             case VALUE_TYPE_F64:
-                u32 = (uint32 *)&result->of.i64;
+                u32 = (const uint32 *)&result->of.i64;
                 *argv++ = u32[0];
                 *argv++ = u32[1];
                 break;
@@ -7191,14 +7200,14 @@ loader_find_export(const WASMModuleCommon *module, const char *module_name,
     uint32 export_count = 0, i;
 #if WASM_ENABLE_AOT != 0
     if (module->module_type == Wasm_Module_AoT) {
-        AOTModule *aot_module = (AOTModule *)module;
+        const AOTModule *aot_module = (const AOTModule *)module;
         exports = (WASMExport *)aot_module->exports;
         export_count = aot_module->export_count;
     }
 #endif
 #if WASM_ENABLE_INTERP != 0
     if (module->module_type == Wasm_Module_Bytecode) {
-        WASMModule *wasm_module = (WASMModule *)module;
+        const WASMModule *wasm_module = (const WASMModule *)module;
         exports = wasm_module->exports;
         export_count = wasm_module->export_count;
     }

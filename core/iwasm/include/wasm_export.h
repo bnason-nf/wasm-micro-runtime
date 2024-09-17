@@ -115,6 +115,7 @@ typedef struct wasm_export_t {
 /* Instantiated WASM module */
 struct WASMModuleInstanceCommon;
 typedef struct WASMModuleInstanceCommon *wasm_module_inst_t;
+typedef const struct WASMModuleInstanceCommon *wasm_module_inst_tc;
 
 /* Function instance */
 typedef void WASMFunctionInstanceCommon;
@@ -130,7 +131,7 @@ typedef struct wasm_section_t {
     /* section type */
     int section_type;
     /* section body, not include type and size */
-    uint8_t *section_body;
+    const uint8_t *section_body;
     /* section body size */
     uint32_t section_body_size;
 } wasm_section_t, aot_section_t, *wasm_section_list_t, *aot_section_list_t;
@@ -639,7 +640,7 @@ WASM_RUNTIME_API_EXTERN void
 wasm_runtime_set_wasi_args_ex(wasm_module_t module, const char *dir_list[],
                               uint32_t dir_count, const char *map_dir_list[],
                               uint32_t map_dir_count, const char *env[],
-                              uint32_t env_count, char *argv[], int argc,
+                              uint32_t env_count, const char *argv[], int argc,
                               int64_t stdinfd, int64_t stdoutfd,
                               int64_t stderrfd);
 
@@ -652,7 +653,7 @@ WASM_RUNTIME_API_EXTERN void
 wasm_runtime_set_wasi_args(wasm_module_t module, const char *dir_list[],
                            uint32_t dir_count, const char *map_dir_list[],
                            uint32_t map_dir_count, const char *env[],
-                           uint32_t env_count, char *argv[], int argc);
+                           uint32_t env_count, const char *argv[], int argc);
 
 WASM_RUNTIME_API_EXTERN void
 wasm_runtime_set_wasi_addr_pool(wasm_module_t module, const char *addr_pool[],
@@ -859,7 +860,7 @@ wasm_runtime_destroy_exec_env(wasm_exec_env_t exec_env);
  * @return exec_env the execution environment to destroy
  */
 WASM_RUNTIME_API_EXTERN wasm_exec_env_t
-wasm_runtime_get_exec_env_singleton(wasm_module_inst_t module_inst);
+wasm_runtime_get_exec_env_singleton(wasm_module_inst_tc module_inst);
 
 /**
  * Start debug instance based on given execution environment.
@@ -1174,7 +1175,7 @@ wasm_application_execute_func(wasm_module_inst_t module_inst, const char *name,
  * @return the exception string
  */
 WASM_RUNTIME_API_EXTERN const char *
-wasm_runtime_get_exception(wasm_module_inst_t module_inst);
+wasm_runtime_get_exception(wasm_module_inst_tc const module_inst);
 
 /**
  * Set exception info of the WASM module instance.
@@ -1353,7 +1354,7 @@ wasm_runtime_validate_app_str_addr(wasm_module_inst_t module_inst,
  */
 WASM_RUNTIME_API_EXTERN bool
 wasm_runtime_validate_native_addr(wasm_module_inst_t module_inst,
-                                  void *native_ptr, uint64_t size);
+                                  const void *native_ptr, uint64_t size);
 
 /**
  * Convert app address (relative address) to native address (absolute address)
@@ -1381,7 +1382,7 @@ wasm_runtime_addr_app_to_native(wasm_module_inst_t module_inst,
  */
 WASM_RUNTIME_API_EXTERN uint64_t
 wasm_runtime_addr_native_to_app(wasm_module_inst_t module_inst,
-                                void *native_ptr);
+                                const void *native_ptr);
 
 /**
  * Get the app address range (relative address) that a app address belongs to

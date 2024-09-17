@@ -154,7 +154,7 @@ typedef struct AOTModule {
     AOTMemInitData **mem_init_data_list;
 
     /* native symbol */
-    void **native_symbol_list;
+    const void **native_symbol_list;
 
     /* import tables */
     uint32 import_table_count;

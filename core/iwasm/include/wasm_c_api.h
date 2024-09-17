@@ -543,7 +543,7 @@ WASM_API_EXTERN own wasm_module_t* wasm_module_new(
 
 // please refer to wasm_runtime_load_ex(...) in core/iwasm/include/wasm_export.h
 WASM_API_EXTERN own wasm_module_t* wasm_module_new_ex(
-  wasm_store_t*, wasm_byte_vec_t* binary, LoadArgs *args);
+  wasm_store_t*, const wasm_byte_vec_t* binary, LoadArgs *args);
 
 WASM_API_EXTERN void wasm_module_delete(own wasm_module_t*);
 

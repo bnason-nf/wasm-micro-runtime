@@ -36,11 +36,11 @@ write_packet_bytes(WASMGDBServer *gdbserver, const uint8 *data,
     uint8 checksum;
     size_t i;
 
-    write_data_raw(gdbserver, (uint8 *)"$", 1);
+    write_data_raw(gdbserver, (const uint8 *)"$", 1);
     for (i = 0, checksum = 0; i < num_bytes; ++i)
         checksum += data[i];
-    write_data_raw(gdbserver, (uint8 *)data, num_bytes);
-    write_data_raw(gdbserver, (uint8 *)"#", 1);
+    write_data_raw(gdbserver, data, num_bytes);
+    write_data_raw(gdbserver, (const uint8 *)"#", 1);
     write_hex(gdbserver, checksum);
 }
 

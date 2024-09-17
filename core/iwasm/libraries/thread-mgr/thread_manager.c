@@ -448,7 +448,7 @@ wasm_cluster_del_exec_env(WASMCluster *cluster, WASMExecEnv *exec_env)
 
 static WASMExecEnv *
 wasm_cluster_search_exec_env(WASMCluster *cluster,
-                             WASMModuleInstanceCommon *module_inst)
+                             const WASMModuleInstanceCommon *module_inst)
 {
     WASMExecEnv *node = NULL;
 
@@ -469,7 +469,7 @@ wasm_cluster_search_exec_env(WASMCluster *cluster,
 /* search the global cluster list to find if the given
    module instance have a corresponding exec_env */
 WASMExecEnv *
-wasm_clusters_search_exec_env(WASMModuleInstanceCommon *module_inst)
+wasm_clusters_search_exec_env(const WASMModuleInstanceCommon *module_inst)
 {
     WASMCluster *cluster = NULL;
     WASMExecEnv *exec_env = NULL;
@@ -805,7 +805,8 @@ wasm_cluster_dup_c_api_imports(WASMModuleInstanceCommon *module_inst_dst,
         c_api_func_imports =
             ((const AOTModuleInstance *)module_inst_src)->c_api_func_imports;
         import_func_count =
-            ((AOTModule *)(((AOTModuleInstance *)module_inst_src)->module))
+            ((const AOTModule *)(((const AOTModuleInstance *)module_inst_src)
+                                     ->module))
                 ->import_func_count;
     }
 #endif

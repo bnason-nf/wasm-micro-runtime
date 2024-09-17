@@ -69,7 +69,7 @@ typedef struct WASMExecEnv {
 
 #if WASM_ENABLE_AOT != 0
     /* Native symbol list, reserved */
-    void **native_symbol;
+    const void **native_symbol;
 #endif
 
     /*

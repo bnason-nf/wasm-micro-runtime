@@ -553,8 +553,8 @@ typedef struct WASMMemoryImport {
 } WASMMemoryImport;
 
 typedef struct WASMFunctionImport {
-    char *module_name;
-    char *field_name;
+    const char *module_name;
+    const char *field_name;
     /* function type */
     WASMFuncType *func_type;
     /* native function pointer after linked */
@@ -780,7 +780,7 @@ typedef struct WASIArguments {
     uint32 addr_count;
     const char **ns_lookup_pool;
     uint32 ns_lookup_count;
-    char **argv;
+    const char **argv;
     uint32 argc;
     os_raw_file_handle stdio[3];
 } WASIArguments;
@@ -1176,7 +1176,7 @@ inline static uint32
 wasm_string_hash(const char *str)
 {
     unsigned h = (unsigned)strlen(str);
-    const uint8 *p = (uint8 *)str;
+    const uint8 *p = (const uint8 *)str;
     const uint8 *end = p + h;
 
     while (p != end)

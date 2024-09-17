@@ -257,28 +257,28 @@ struct WASMTagInstance {
 #define IS_INVALID_TAGINDEX(tag) ((tag & INVALID_TAGINDEX) == INVALID_TAGINDEX)
 #endif
 typedef struct WASMExportFuncInstance {
-    char *name;
+    const char *name;
     WASMFunctionInstance *function;
 } WASMExportFuncInstance;
 
 typedef struct WASMExportGlobInstance {
-    char *name;
+    const char *name;
     WASMGlobalInstance *global;
 } WASMExportGlobInstance;
 
 typedef struct WASMExportTabInstance {
-    char *name;
+    const char *name;
     WASMTableInstance *table;
 } WASMExportTabInstance;
 
 typedef struct WASMExportMemInstance {
-    char *name;
+    const char *name;
     WASMMemoryInstance *memory;
 } WASMExportMemInstance;
 
 #if WASM_ENABLE_TAGS != 0
 typedef struct WASMExportTagInstance {
-    char *name;
+    const char *name;
     WASMTagInstance *tag;
 } WASMExportTagInstance;
 #endif
@@ -568,7 +568,7 @@ void
 wasm_set_exception_with_id(WASMModuleInstance *module_inst, uint32 id);
 
 const char *
-wasm_get_exception(WASMModuleInstance *module);
+wasm_get_exception(const WASMModuleInstance *module);
 
 /**
  * @brief Copy exception in buffer passed as parameter. Thread-safe version of

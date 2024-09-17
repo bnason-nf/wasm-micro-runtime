@@ -184,8 +184,7 @@ __sys_stat64_wrapper(wasm_exec_env_t exec_env, const char *pathname,
     int ret;
     struct stat statbuf;
 
-    if (!validate_native_addr((void *)statbuf_app,
-                              (uint64)sizeof(struct stat_emcc)))
+    if (!validate_native_addr(statbuf_app, (uint64)sizeof(struct stat_emcc)))
         return -1;
 
     if (pathname == NULL)
@@ -205,8 +204,7 @@ __sys_fstat64_wrapper(wasm_exec_env_t exec_env, int fd,
     int ret;
     struct stat statbuf;
 
-    if (!validate_native_addr((void *)statbuf_app,
-                              (uint64)sizeof(struct stat_emcc)))
+    if (!validate_native_addr(statbuf_app, (uint64)sizeof(struct stat_emcc)))
         return -1;
 
     if (fd <= 0)

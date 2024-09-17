@@ -281,8 +281,8 @@ wasm_runtime_atomic_wait(WASMModuleInstanceCommon *module, void *address,
     shared_memory_unlock(module_inst->memories[0]);
 
 #if WASM_ENABLE_THREAD_MGR != 0
-    exec_env =
-        wasm_clusters_search_exec_env((WASMModuleInstanceCommon *)module_inst);
+    exec_env = wasm_clusters_search_exec_env(
+        (const WASMModuleInstanceCommon *)module_inst);
     bh_assert(exec_env);
 #endif
 

@@ -1497,7 +1497,7 @@ execute_post_instantiate_functions(WASMModuleInstance *module_inst,
 #if WASM_ENABLE_THREAD_MGR != 0
         if (!exec_env)
             exec_env = wasm_clusters_search_exec_env(
-                (WASMModuleInstanceCommon *)module_inst);
+                (const WASMModuleInstanceCommon *)module_inst);
 #endif
         if (!exec_env) {
             if (!(exec_env = exec_env_created = wasm_exec_env_create(
@@ -1618,7 +1618,7 @@ execute_malloc_function(WASMModuleInstance *module_inst, WASMExecEnv *exec_env,
 #if WASM_ENABLE_THREAD_MGR != 0
         if (!exec_env)
             exec_env = wasm_clusters_search_exec_env(
-                (WASMModuleInstanceCommon *)module_inst);
+                (const WASMModuleInstanceCommon *)module_inst);
 #endif
         if (!exec_env) {
             if (!(exec_env = exec_env_created = wasm_exec_env_create(
@@ -1708,7 +1708,7 @@ execute_free_function(WASMModuleInstance *module_inst, WASMExecEnv *exec_env,
 #if WASM_ENABLE_THREAD_MGR != 0
         if (!exec_env)
             exec_env = wasm_clusters_search_exec_env(
-                (WASMModuleInstanceCommon *)module_inst);
+                (const WASMModuleInstanceCommon *)module_inst);
 #endif
         if (!exec_env) {
             if (!(exec_env = exec_env_created = wasm_exec_env_create(
@@ -3474,10 +3474,10 @@ wasm_call_function(WASMExecEnv *exec_env, WASMFunctionInstance *function,
 
 #if WASM_ENABLE_PERF_PROFILING != 0 || WASM_ENABLE_DUMP_CALL_STACK != 0
 /* look for the function name */
-static char *
+static const char *
 get_func_name_from_index(const WASMModuleInstance *inst, uint32 func_index)
 {
-    char *func_name = NULL;
+    const char *func_name = NULL;
     WASMFunctionInstance *func_inst = inst->e->functions + func_index;
 
     if (func_inst->is_import_func) {
@@ -4816,7 +4816,7 @@ wasm_const_str_list_insert(const uint8 *str, uint32 len, WASMModule *module,
         /* As the file buffer can be referred to after loading, we use
            the previous byte of leb encoded size to adjust the string:
            move string 1 byte backward and then append '\0' */
-        char *c_str = (char *)str - 1;
+        char *c_str = (char *)(uintptr_t)str - 1;
         bh_memmove_s(c_str, len + 1, c_str + 1, len);
         c_str[len] = '\0';
         return c_str;

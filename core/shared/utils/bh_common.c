@@ -5,12 +5,12 @@
 
 #include "bh_common.h"
 
-static char *
-align_ptr(char *src, unsigned int b)
+static const char *
+align_ptr(const char *src, unsigned int b)
 {
     uintptr_t v = (uintptr_t)src;
     uintptr_t m = b - 1;
-    return (char *)((v + m) & ~m);
+    return (const char *)((v + m) & ~m);
 }
 
 /*
@@ -20,16 +20,16 @@ int
 b_memcpy_wa(void *s1, unsigned int s1max, const void *s2, unsigned int n)
 {
     char *dest = (char *)s1;
-    char *src = (char *)s2;
+    const char *src = (const char *)s2;
 
-    char *pa = align_ptr(src, 4);
-    char *pb = align_ptr((src + n), 4);
+    const char *pa = align_ptr(src, 4);
+    const char *pb = align_ptr((src + n), 4);
 
     unsigned int buff;
     const char *p_byte_read;
 
-    unsigned int *p;
-    char *ps;
+    const unsigned int *p;
+    const char *ps;
 
     if (n == 0) {
         return 0;
@@ -39,30 +39,30 @@ b_memcpy_wa(void *s1, unsigned int s1max, const void *s2, unsigned int n)
         pa -= 4;
     }
 
-    for (p = (unsigned int *)pa; p < (unsigned int *)pb; p++) {
+    for (p = (const unsigned int *)pa; p < (const unsigned int *)pb; p++) {
         buff = *(p);
         p_byte_read = ((char *)&buff);
 
         /* read leading word */
-        if ((char *)p <= src) {
-            for (ps = src; ps < ((char *)p + 4); ps++) {
+        if ((const char *)p <= src) {
+            for (ps = src; ps < ((const char *)p + 4); ps++) {
                 if (ps >= src + n) {
                     break;
                 }
-                p_byte_read = ((char *)&buff) + (ps - (char *)p);
+                p_byte_read = ((char *)&buff) + (ps - (const char *)p);
                 *dest++ = *p_byte_read;
             }
         }
         /* read trailing word */
-        else if ((char *)p >= pb - 4) {
-            for (ps = (char *)p; ps < src + n; ps++) {
+        else if ((const char *)p >= pb - 4) {
+            for (ps = (const char *)p; ps < src + n; ps++) {
                 *dest++ = *p_byte_read++;
             }
         }
         /* read meaning word(s) */
         else {
-            if ((char *)p + 4 >= src + n) {
-                for (ps = (char *)p; ps < src + n; ps++) {
+            if ((const char *)p + 4 >= src + n) {
+                for (ps = (const char *)p; ps < src + n; ps++) {
                     *dest++ = *p_byte_read++;
                 }
             }
@@ -80,7 +80,7 @@ int
 b_memcpy_s(void *s1, unsigned int s1max, const void *s2, unsigned int n)
 {
     char *dest = (char *)s1;
-    char *src = (char *)s2;
+    const char *src = (const char *)s2;
     if (n == 0) {
         return 0;
     }
@@ -100,7 +100,7 @@ int
 b_memmove_s(void *s1, unsigned int s1max, const void *s2, unsigned int n)
 {
     char *dest = (char *)s1;
-    char *src = (char *)s2;
+    const char *src = (const char *)s2;
     if (n == 0) {
         return 0;
     }

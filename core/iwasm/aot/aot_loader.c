@@ -25,6 +25,11 @@
 #define XMM_PLT_PREFIX "__xmm@"
 #define REAL_PLT_PREFIX "__real@"
 
+#if defined(__GNUC__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
+#endif
+
 static void
 set_error_buf(char *error_buf, uint32 error_buf_size, const char *string)
 {
@@ -108,16 +113,16 @@ check_buf(const uint8 *buf, const uint8 *buf_end, uint32 length,
         }                                                                  \
     } while (0)
 
-static uint8 *
+static const uint8 *
 align_ptr(const uint8 *p, uint32 b)
 {
     uintptr_t v = (uintptr_t)p;
     uintptr_t m = b - 1;
-    return (uint8 *)((v + m) & ~m);
+    return (const uint8 *)((v + m) & ~m);
 }
 
 static inline uint64
-GET_U64_FROM_ADDR(uint32 *addr)
+GET_U64_FROM_ADDR(const uint32 *addr)
 {
     union {
         uint64 val;
@@ -170,7 +175,7 @@ GET_U16_FROM_ADDR(const uint8 *p)
             p = (uint8 *)align_ptr(p, sizeof(type));    \
         else                                            \
             /* align 4 bytes if type is uint64 */       \
-            p = (uint8 *)align_ptr(p, sizeof(uint32));  \
+            p = align_ptr(p, sizeof(uint32));           \
         CHECK_BUF(p, p_end, sizeof(type));              \
         if (sizeof(type) == sizeof(uint8))              \
             res = GET_U8_FROM_ADDR(p);                  \
@@ -202,21 +207,21 @@ GET_U16_FROM_ADDR(const uint8 *p)
 
 #else /* else of (WASM_ENABLE_WORD_ALIGN_READ != 0) */
 
-#define TEMPLATE_READ(p, p_end, res, type)              \
-    do {                                                \
-        if (sizeof(type) != sizeof(uint64))             \
-            p = (uint8 *)align_ptr(p, sizeof(type));    \
-        else                                            \
-            /* align 4 bytes if type is uint64 */       \
-            p = (uint8 *)align_ptr(p, sizeof(uint32));  \
-        CHECK_BUF(p, p_end, sizeof(type));              \
-        if (sizeof(type) != sizeof(uint64))             \
-            res = *(type *)p;                           \
-        else                                            \
-            res = (type)GET_U64_FROM_ADDR((uint32 *)p); \
-        if (!is_little_endian())                        \
-            exchange_##type((uint8 *)&res);             \
-        p += sizeof(type);                              \
+#define TEMPLATE_READ(p, p_end, res, type)                    \
+    do {                                                      \
+        if (sizeof(type) != sizeof(uint64))                   \
+            p = (uint8 *)align_ptr(p, sizeof(type));          \
+        else                                                  \
+            /* align 4 bytes if type is uint64 */             \
+            p = (uint8 *)align_ptr(p, sizeof(uint32));        \
+        CHECK_BUF(p, p_end, sizeof(type));                    \
+        if (sizeof(type) != sizeof(uint64))                   \
+            res = *(const type *)p;                           \
+        else                                                  \
+            res = (type)GET_U64_FROM_ADDR((const uint32 *)p); \
+        if (!is_little_endian())                              \
+            exchange_##type((uint8 *)&res);                   \
+        p += sizeof(type);                                    \
     } while (0)
 
 /* NOLINTBEGIN, disable lint for this region with clang-tidy */
@@ -608,10 +613,10 @@ fail:
     return false;
 }
 
-static void *
+static const void *
 get_native_symbol_by_name(const char *name)
 {
-    void *func = NULL;
+    const void *func = NULL;
     uint32 symnum = 0;
     SymbolMap *sym = NULL;
 
@@ -1201,7 +1206,7 @@ load_init_expr(const uint8 **p_buf, const uint8 *buf_end, AOTModule *module,
     uint64 *i64x2 = NULL;
     bool free_if_fail = false;
 
-    buf = (uint8 *)align_ptr(buf, 4);
+    buf = align_ptr(buf, 4);
 
     read_uint32(buf, buf_end, init_expr_type);
 
@@ -2136,7 +2141,7 @@ load_import_globals(const uint8 **p_buf, const uint8 *buf_end,
 
     /* Create each import global */
     for (i = 0; i < module->import_global_count; i++) {
-        buf = (uint8 *)align_ptr(buf, 2);
+        buf = align_ptr(buf, 2);
         read_uint8(buf, buf_end, import_globals[i].type.val_type);
         read_uint8(buf, buf_end, import_globals[i].type.is_mutable);
         read_string(buf, buf_end, import_globals[i].module_name);
@@ -2585,7 +2590,7 @@ try_merge_data_and_text(const uint8 **buf, const uint8 **buf_end,
                         uint32 error_buf_size)
 {
     uint8 *old_buf = (uint8 *)*buf;
-    uint8 *old_end = (uint8 *)*buf_end;
+    const uint8 *old_end = *buf_end;
     size_t code_size = (size_t)(old_end - old_buf);
     uint32 page_size = os_getpagesize();
     uint64 total_size = 0;
@@ -2809,7 +2814,7 @@ load_function_section(const uint8 *buf, const uint8 *buf_end, AOTModule *module,
         for (i = 0; i < module->import_func_count + module->func_count; i++) {
             uint32 local_ref_flag_cell_num;
 
-            buf = (uint8 *)align_ptr(buf, sizeof(uint32));
+            buf = align_ptr(buf, sizeof(uint32));
             read_uint32(
                 p, p_end,
                 module->func_local_ref_flags[i].local_ref_flag_cell_num);
@@ -2933,7 +2938,7 @@ aot_get_data_section_addr(AOTModule *module, const char *section_name,
     return get_data_section_addr(module, section_name, p_data_size);
 }
 
-static void *
+static const void *
 resolve_target_sym(const char *symbol, int32 *p_index)
 {
     uint32 i, num = 0;
@@ -3032,7 +3037,7 @@ do_text_relocation(AOTModule *module, AOTRelocationGroup *group,
     uint32 real_plt_index = 0, float_plt_index = 0, j;
 #endif
     char symbol_buf[128] = { 0 }, *symbol, *p;
-    void *symbol_addr;
+    const void *symbol_addr;
     AOTRelocation *relocation = group->relocations;
 
     if (group->relocation_count > 0 && !aot_text) {
@@ -3352,8 +3357,9 @@ do_data_relocation(AOTModule *module, AOTRelocationGroup *group,
 }
 
 static bool
-validate_symbol_table(uint8 *buf, uint8 *buf_end, uint32 *offsets, uint32 count,
-                      char *error_buf, uint32 error_buf_size)
+validate_symbol_table(const uint8 *buf, const uint8 *buf_end,
+                      const uint32 *offsets, uint32 count, char *error_buf,
+                      uint32 error_buf_size)
 {
     uint32 i, str_len_addr = 0;
     uint16 str_len;
@@ -3366,7 +3372,7 @@ validate_symbol_table(uint8 *buf, uint8 *buf_end, uint32 *offsets, uint32 count,
         str_len_addr += (uint32)sizeof(uint16) + str_len;
         str_len_addr = align_uint(str_len_addr, 2);
         buf += str_len;
-        buf = (uint8 *)align_ptr(buf, 2);
+        buf = align_ptr(buf, 2);
     }
 
     if (buf == buf_end)
@@ -3384,22 +3390,23 @@ load_relocation_section(const uint8 *buf, const uint8 *buf_end,
     uint32 symbol_count = 0;
     uint32 group_count = 0, i, j, got_item_count = 0;
     uint64 size;
-    uint32 *symbol_offsets, total_string_len;
-    uint8 *symbol_buf, *symbol_buf_end;
+    const uint32 *symbol_offsets;
+    uint32 total_string_len;
+    const uint8 *symbol_buf, *symbol_buf_end;
     int map_prot, map_flags;
     bool ret = false;
     char **symbols = NULL;
 
     read_uint32(buf, buf_end, symbol_count);
 
-    symbol_offsets = (uint32 *)buf;
+    symbol_offsets = (const uint32 *)buf;
     for (i = 0; i < symbol_count; i++) {
         CHECK_BUF(buf, buf_end, sizeof(uint32));
         buf += sizeof(uint32);
     }
 
     read_uint32(buf, buf_end, total_string_len);
-    symbol_buf = (uint8 *)buf;
+    symbol_buf = buf;
     symbol_buf_end = symbol_buf + total_string_len;
 
     if (!validate_symbol_table(symbol_buf, symbol_buf_end, symbol_offsets,
@@ -3427,7 +3434,7 @@ load_relocation_section(const uint8 *buf, const uint8 *buf_end,
         uint8 *group_name;
 
         /* section name address is 4 bytes aligned. */
-        buf = (uint8 *)align_ptr(buf, sizeof(uint32));
+        buf = align_ptr(buf, sizeof(uint32));
         read_uint32(buf, buf_end, name_index);
 
         if (name_index >= symbol_count) {
@@ -3531,10 +3538,10 @@ load_relocation_section(const uint8 *buf, const uint8 *buf_end,
     for (i = 0; i < group_count; i++) {
         uint32 name_index, relocation_count;
         uint16 group_name_len;
-        uint8 *group_name;
+        const uint8 *group_name;
 
         /* section name address is 4 bytes aligned. */
-        buf = (uint8 *)align_ptr(buf, sizeof(uint32));
+        buf = align_ptr(buf, sizeof(uint32));
         read_uint32(buf, buf_end, name_index);
 
         if (name_index >= symbol_count) {
@@ -3555,7 +3562,7 @@ load_relocation_section(const uint8 *buf, const uint8 *buf_end,
             char symbol_name_buf[128] = { 0 };
             uint32 symbol_index;
             uint16 symbol_name_len;
-            uint8 *symbol_name;
+            const uint8 *symbol_name;
 
             /* relocation offset and addend */
             buf += sizeof(void *) * 2;
@@ -3665,7 +3672,7 @@ load_relocation_section(const uint8 *buf, const uint8 *buf_end,
         uint32 name_index;
 
         /* section name address is 4 bytes aligned. */
-        buf = (uint8 *)align_ptr(buf, sizeof(uint32));
+        buf = align_ptr(buf, sizeof(uint32));
         read_uint32(buf, buf_end, name_index);
 
         if (name_index >= symbol_count) {
@@ -3675,7 +3682,7 @@ load_relocation_section(const uint8 *buf, const uint8 *buf_end,
         }
 
         if (symbols[name_index] == NULL) {
-            uint8 *name_addr = symbol_buf + symbol_offsets[name_index];
+            uint8 *name_addr = (uint8 *)symbol_buf + symbol_offsets[name_index];
 
             read_string(name_addr, buf_end, symbols[name_index]);
         }
@@ -3716,7 +3723,8 @@ load_relocation_section(const uint8 *buf, const uint8 *buf_end,
             }
 
             if (symbols[symbol_index] == NULL) {
-                uint8 *symbol_addr = symbol_buf + symbol_offsets[symbol_index];
+                uint8 *symbol_addr =
+                    (uint8 *)symbol_buf + symbol_offsets[symbol_index];
 
                 read_string(symbol_addr, buf_end, symbols[symbol_index]);
             }
@@ -4179,7 +4187,7 @@ create_sections(AOTModule *module, const uint8 *buf, uint32 size,
 
             memset(section, 0, sizeof(AOTSection));
             section->section_type = (int32)section_type;
-            section->section_body = (uint8 *)p;
+            section->section_body = p;
             section->section_body_size = section_size;
 
             if (section_type == AOT_SECTION_TYPE_TEXT) {
@@ -4573,4 +4581,8 @@ aot_exchange_uint64(uint8 *p_data)
 {
     return exchange_uint64(p_data);
 }
+#endif
+
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
 #endif
